@@ -13,19 +13,25 @@ typealias ViewControllerRepresentable = NSViewControllerRepresentable
 typealias ViewControllerRepresentable = UIViewControllerRepresentable
 #endif
 
+
 public struct SwiftyMonaco: ViewControllerRepresentable, MonacoViewControllerDelegate {
+   
     
+    
+    
+    var id = UUID()
+    
+    var languageSupport : Binding<[LanguageSupport]>?
     var text: Binding<String>
-    private var syntax: SyntaxHighlight?
-    private var _minimap: Bool = true
-    private var _scrollbar: Bool = true
-    private var _smoothCursor: Bool = false
-    private var _cursorBlink: CursorBlink = .blink
-    private var _fontSize: Int = 12
-    private var _theme: Theme? = nil
+    var isDirty: Binding<Bool>
+    var config : SwiftyMonacoConfig
     
-    public init(text: Binding<String>) {
+    
+    public init(text: Binding<String>, isDirty : Binding<Bool>, config: SwiftyMonacoConfig, languageSupport: Binding<[LanguageSupport]>) {
         self.text = text
+        self.isDirty = isDirty
+        self.config = config
+        self.languageSupport = languageSupport
     }
     
     #if os(macOS)
@@ -36,6 +42,11 @@ public struct SwiftyMonaco: ViewControllerRepresentable, MonacoViewControllerDel
     }
     
     public func updateNSViewController(_ nsViewController: MonacoViewController, context: Context) {
+        nsViewController.delegate = self
+        nsViewController.registerCustomLanguages()
+        nsViewController.updateLanguage()
+        nsViewController.updateText()
+        nsViewController.updateMarkers()
     }
     #endif
     
@@ -57,42 +68,56 @@ public struct SwiftyMonaco: ViewControllerRepresentable, MonacoViewControllerDel
     
     public func monacoView(controller: MonacoViewController, textDidChange text: String) {
         self.text.wrappedValue = text
+        self.isDirty.wrappedValue = true
     }
     
     public func monacoView(getSyntax controller: MonacoViewController) -> SyntaxHighlight? {
-        return syntax
+        return config.syntax
     }
     
     public func monacoView(getMinimap controller: MonacoViewController) -> Bool {
-        return _minimap
+        return config.minimap
     }
     
     public func monacoView(getScrollbar controller: MonacoViewController) -> Bool {
-        return _scrollbar
+        return config.scrollbar
     }
     
     public func monacoView(getSmoothCursor controller: MonacoViewController) -> Bool {
-        return _smoothCursor
+        return config.smoothCursor
     }
     
     public func monacoView(getCursorBlink controller: MonacoViewController) -> CursorBlink {
-        return _cursorBlink
+        return config.cursorBlink
     }
     
     public func monacoView(getFontSize controller: MonacoViewController) -> Int {
-        return _fontSize
+        return config.fontSize
     }
     
     public func monacoView(getTheme controller: MonacoViewController) -> Theme? {
-        return _theme
+        return config.theme
     }
+    public func monacoView(getLanguageSupport controller: MonacoViewController) -> LanguageSupport? {
+        return config.monacoLanguage
+    }
+    public func monacoView(getCustomLanguageSpecs controller: MonacoViewController) -> [LanguageSupport: String] {
+        return config.customLanguageSpecs
+    }
+    public func monacoView(getMarkers controller: MonacoViewController) -> [EditorMarker] {
+        return config.markers
+    }
+    public mutating func monacoView(updateLanguageSupport: [LanguageSupport], controller: MonacoViewController) {
+        self.languageSupport?.wrappedValue = updateLanguageSupport
+    }
+    
 }
 
 // MARK: - Modifiers
 public extension SwiftyMonaco {
     func syntaxHighlight(_ syntax: SyntaxHighlight) -> Self {
         var m = self
-        m.syntax = syntax
+        m.config.syntax = syntax
         return m
     }
 }
@@ -100,7 +125,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func minimap(_ enabled: Bool) -> Self {
         var m = self
-        m._minimap = enabled
+        m.config.minimap = enabled
         return m
     }
 }
@@ -108,7 +133,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func scrollbar(_ enabled: Bool) -> Self {
         var m = self
-        m._scrollbar = enabled
+        m.config.scrollbar = enabled
         return m
     }
 }
@@ -116,7 +141,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func smoothCursor(_ enabled: Bool) -> Self {
         var m = self
-        m._smoothCursor = enabled
+        m.config.smoothCursor = enabled
         return m
     }
 }
@@ -124,7 +149,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func cursorBlink(_ style: CursorBlink) -> Self {
         var m = self
-        m._cursorBlink = style
+        m.config.cursorBlink = style
         return m
     }
 }
@@ -132,7 +157,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func fontSize(_ size: Int) -> Self {
         var m = self
-        m._fontSize = size
+        m.config.fontSize = size
         return m
     }
 }
@@ -140,7 +165,7 @@ public extension SwiftyMonaco {
 public extension SwiftyMonaco {
     func theme(_ theme: Theme) -> Self {
         var m = self
-        m._theme = theme
+        m.config.theme = theme
         return m
     }
 }

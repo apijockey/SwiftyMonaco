@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import UniformTypeIdentifiers
 
-public struct SyntaxHighlight {
+public struct SyntaxHighlight : Codable, Hashable {
     public init(title: String, configuration: String) {
         self.title = title
         self.configuration = configuration
@@ -20,6 +21,7 @@ public struct SyntaxHighlight {
     
     public var title: String
     public var configuration: String
+
 }
 
 public extension SyntaxHighlight {
